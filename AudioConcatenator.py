@@ -22,12 +22,13 @@ class App:
         # title
 #        style = tk.Style()
 #        style.configure("BW.TLabel", foreground="black", dimension=20, justify="center")
-        self.title_style = ttk.Style()
-        self.title_style.configure('my.TitleLabel', font=('Helvetica', 12), justify="center")
-        self.title_label = ttk.Label(root, text="Audio Concatenator", style=self.title_style)
+        self.titlestyle = ttk.Style()
+        self.titlestyle.configure("titlestyle.TLabel", font=('Helvetica', 12))
+        #self.title_style.configure('my.TLabel', font=('Helvetica', 12), justify="center")
+        self.title_label = ttk.Label(root, text="Audio Concatenator", style='titlestyle.TLabel', justify='center')
         #self.title_label["font"] = tkFont.Font(size=15)
         #self.title_label["justify"] = "center"
-        self.title_label.place(x=10, y=10, width=385, height=30)
+        self.title_label.place(x=125, y=10, width=150, height=30)
 
         # Select Folder section
         self.folder_path = ""
@@ -46,13 +47,10 @@ class App:
         self.select_folder_btn["command"] = self.select_folder_btn_command
 
         # Select title section
-        self.new_title_label = tk.Label(root)
-        self.new_title_label["justify"] = "center"
-        self.new_title_label["text"] = "New Title"
+        self.new_title_label = ttk.Label(root, text="New Title")
         self.new_title_label.place(x=20, y=110, width=70, height=25)
 
-        self.new_title_entry = ttk.Entry(root)
-        self.new_title_entry["text"] = ""
+        self.new_title_entry = ttk.Entry(root, text="")
         self.new_title_entry.place(x=100, y=110, width=205, height=25)
 
         # radio button section
@@ -70,10 +68,8 @@ class App:
             radio.pack()
 
         # Convert button
-        self.convert_btn = ttk.Button(root, text="Convert")
+        self.convert_btn = ttk.Button(root, text="Convert", command=self.convert_btn_command, state="disabled")
         self.convert_btn.place(x=160, y=170, width=92, height=25)
-        self.convert_btn["command"] = self.convert_btn_command
-        self.convert_btn["state"] = "disabled"
 
     def select_folder_btn_command(self):
         self.folder_path = filedialog.askdirectory()
