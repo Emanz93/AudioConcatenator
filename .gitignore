@@ -2,3 +2,4 @@
 test.py
 build/
 __pychache__/
+.idea/
