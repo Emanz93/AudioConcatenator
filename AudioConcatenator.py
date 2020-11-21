@@ -88,8 +88,10 @@ class App:
         # Listbox
         self.listbox = tk.Listbox(self.top)
         self.listbox.place(x=10, y=10, width=400, height=580)
-        self.bar = ttk.Scrollbar(self.listbox, command = self.listbox.yview)
-        self.bar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.vertical_bar = ttk.Scrollbar(self.listbox, command=self.listbox.yview)
+        self.vertical_bar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.horizontal_bar = ttk.Scrollbar(self.listbox, orient='horizontal', command=self.listbox.xview)
+        self.horizontal_bar.pack(side=tk.BOTTOM, fill=tk.X)
 
         self.up_button = ttk.Button(self.top, text="UP", command=self.move_callback_up)
         self.up_button.place(x=420, y=265, width=70, height=25)
