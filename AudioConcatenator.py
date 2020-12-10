@@ -70,10 +70,9 @@ class App:
         self.convert_btn["state"] = "normal"
 
     def convert_btn_command(self):
-        print(self.selected_extension.get())
-        #self.out_file_title = self.new_title_entry.get()
-        #self._create_top_level_selection_order()
-        #self.order_the_list()
+        self.out_file_title = self.new_title_entry.get()
+        self._create_top_level_selection_order()
+        self.order_the_list()
 
     def _create_top_level_selection_order(self):
         self.top = tk.Toplevel(self.root)
