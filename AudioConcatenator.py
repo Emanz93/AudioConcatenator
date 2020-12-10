@@ -5,6 +5,9 @@ import tkinter.ttk as ttk
 from tkinter import filedialog
 import tkinter.messagebox
 
+# TODO: add exit button
+# TODO: add support to m4b -> m4a
+# TODO: do not rename the files. At least the input folder name and the output filename
 
 class App:
     def __init__(self, root):
@@ -44,24 +47,20 @@ class App:
 
         self.new_title_entry = ttk.Entry(self.root, text="")
         self.new_title_entry.place(x=100, y=110, width=205, height=25)
-
-        # radio button section
+        
+        # TODO: remove radio button in favour of dropdown menu
         self.selected_extension = tk.StringVar(self.root, "mp3")
-        extensions = ["mp3", "mp4", "mp3a"]
+        self.available_extensions = sorted(["mp3", "mp4", "mp3a", "m4a", "m4b"])
 
-        self.group = tk.LabelFrame(self.root, text="Extension", padx=5, pady=5)
-        self.group.place(x=10, y=150, width=120, height=100)
+        self.extension_label = ttk.Label(self.root, text="Extension")
+        self.extension_label.place(x=20, y=160, width=110, height=25)
 
-        for e in extensions:
-            radio = tk.Radiobutton(self.group)
-            radio["text"] = e
-            radio["value"] = e
-            radio["variable"] = self.selected_extension
-            radio.pack()
+        self.extension_menu = ttk.Combobox(self.root, textvariable=self.selected_extension, values=self.available_extensions)
+        self.extension_menu.place(x=100, y=160, width=110, height=25)
 
         # Convert button
-        self.convert_btn = ttk.Button(self.root, text="Convert", command=self.convert_btn_command, state="disabled")
-        self.convert_btn.place(x=160, y=170, width=92, height=25)
+        self.convert_btn = ttk.Button(self.root, text="Convert", command=self.convert_btn_command)
+        self.convert_btn.place(x=270, y=160, width=92, height=25)
 
     def select_folder_btn_command(self):
         self.folder_path = filedialog.askdirectory()
@@ -71,9 +70,10 @@ class App:
         self.convert_btn["state"] = "normal"
 
     def convert_btn_command(self):
-        self.out_file_title = self.new_title_entry.get()
-        self._create_top_level_selection_order()
-        self.order_the_list()
+        print(self.selected_extension.get())
+        #self.out_file_title = self.new_title_entry.get()
+        #self._create_top_level_selection_order()
+        #self.order_the_list()
 
     def _create_top_level_selection_order(self):
         self.top = tk.Toplevel(self.root)
@@ -148,7 +148,7 @@ def convert(folder, ordered_files, out_file_title, extension):
         fd.writelines(lines)
 
     out_name = "{}.{}".format(out_file_title, extension)
-    cmd = "ffmpeg -f concat -safe 0 -i list.txt -c copy {}".format(os.path.join(folder, out_name))
+    cmd = "ffmpeg -f concat -safe 0 -i {} -c copy {}".format(LIST_FILE, os.path.join(folder, out_name))
     os.system(cmd)
     os.unlink(LIST_FILE)
     tkinter.messagebox.showinfo(title="Finish", message="Process is completed.")
