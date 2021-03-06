@@ -31,10 +31,13 @@ def syscmd(cmd):
     return p.returncode, output.decode()
 
 
-class App:
+class AudioConcatenator:
     def __init__(self, r):
         # setting title
         self.root = r
+        style = ttk.Style(root)
+        root.tk.call('source', 'styles/azure.tcl')
+        style.theme_use('azure')
         self.root.title("AudioConcatenator")
         # setting window size
         width = 400
@@ -58,39 +61,39 @@ class App:
         # Select Folder section
         self.folder_path = ""
         self.folder_select_label = ttk.Label(self.root, text="Folder Select")
-        self.folder_select_label.place(x=10, y=60, width=81, height=25)
+        self.folder_select_label.place(x=10, y=60, width=81, height=30)
 
         self.folder_select_entry = ttk.Entry(self.root, text="")
-        self.folder_select_entry.place(x=100, y=60, width=206, height=25)
+        self.folder_select_entry.place(x=100, y=60, width=206, height=30)
 
         self.select_folder_btn = ttk.Button(self.root, text="Select", command=self.select_folder_btn_command)
-        self.select_folder_btn.place(x=310, y=60, width=70, height=25)
+        self.select_folder_btn.place(x=310, y=60, width=70, height=30)
 
         # Select title section
         self.new_title_label = ttk.Label(self.root, text="New Title")
-        self.new_title_label.place(x=20, y=110, width=70, height=25)
+        self.new_title_label.place(x=20, y=110, width=70, height=30)
 
         self.new_title_entry = ttk.Entry(self.root, text="")
-        self.new_title_entry.place(x=100, y=110, width=205, height=25)
+        self.new_title_entry.place(x=100, y=110, width=205, height=30)
 
         # select extension section
         self.selected_extension = tk.StringVar(self.root, "mp3")
         self.available_extensions = sorted(["mp3", "mp4", "mp3a", "m4a", "m4b"])
 
         self.extension_label = ttk.Label(self.root, text="Extension")
-        self.extension_label.place(x=20, y=160, width=110, height=25)
+        self.extension_label.place(x=20, y=160, width=110, height=30)
 
         self.extension_menu = ttk.Combobox(self.root, textvariable=self.selected_extension,
                                            values=self.available_extensions)
-        self.extension_menu.place(x=100, y=160, width=110, height=25)
+        self.extension_menu.place(x=100, y=160, width=110, height=30)
 
         # Convert button
-        self.convert_btn = ttk.Button(self.root, text="Convert", command=self.convert_btn_command)
-        self.convert_btn.place(x=270, y=160, width=92, height=25)
+        self.convert_btn = ttk.Button(self.root, text="Convert", command=self.convert_btn_command, style='Accentbutton')
+        self.convert_btn.place(x=270, y=160, width=92, height=30)
 
         # Exit button
         self.convert_btn = ttk.Button(self.root, text="Exit", command=sys.exit)
-        self.convert_btn.place(x=width / 2 - 92 / 2, y=210, width=92, height=25)
+        self.convert_btn.place(x=width / 2 - 92 / 2, y=210, width=92, height=30)
 
     def select_folder_btn_command(self):
         self.folder_path = filedialog.askdirectory()
@@ -123,13 +126,13 @@ class App:
         self.horizontal_bar.pack(side=tk.BOTTOM, fill=tk.X)
 
         self.up_button = ttk.Button(self.top, text="UP", command=self.move_callback_up)
-        self.up_button.place(x=420, y=265, width=70, height=25)
+        self.up_button.place(x=420, y=265, width=70, height=30)
         self.delete_button = ttk.Button(self.top, text="DELETE", command=self.delete_callback)
-        self.delete_button.place(x=420, y=300, width=70, height=25)
+        self.delete_button.place(x=420, y=300, width=70, height=30)
         self.down_button = ttk.Button(self.top, text="DOWN", command=self.move_callback_down)
-        self.down_button.place(x=420, y=335, width=70, height=25)
+        self.down_button.place(x=420, y=335, width=70, height=30)
         self.continue_button = ttk.Button(self.top, text="Continue", command=self.continue_callback)
-        self.continue_button.place(x=420, y=30, width=70, height=25)
+        self.continue_button.place(x=420, y=30, width=70, height=30)
 
         self.root.withdraw()
 
@@ -213,7 +216,8 @@ def _pre_conversion(folder, ordered_files, extension):
             # f_out = ordered_files[i].replace('.m4a', '.mp3').replace('.m4b', '.mp3')
             cmd = 'ffmpeg.exe -i {} {}'.format(f_in, f_out)
             os.system(cmd)
-            # syscmd does not work for some reason. It remains stuck.
+            # syscmd does not work for some reason. THe reason seems to be if the ffmpeg command requires an input
+            # from the standard input.
             # ret_code, output = syscmd(cmd)
             # if ret_code != 0:
             #    tkinter.messagebox.showerror("Error", output)
@@ -237,11 +241,13 @@ def convert(folder, ordered_files, out_file_title, extension):
     ordered_files, extension = _pre_conversion(new_folder, ordered_files, extension)
 
     # write the ordered list of files + remove whitespaces in list file.
-    _write_list_file(ordered_files, folder)
+    _write_list_file(ordered_files, new_folder)
 
     default_out_name = "output_file.{}".format(extension)
-    cmd = "ffmpeg -f concat -safe 0 -i {} -c copy {}".format(LIST_FILE, os.path.join(new_folder, default_out_name))
+    cmd = "ffmpeg -y -f concat -safe 0 -i {} -c copy {}".format(LIST_FILE, os.path.join(new_folder, default_out_name))
     # TODO: find a way to use syscmd instead of os.system that is deprecated.
+    # the problem is that syscmd does not show the terminal, while in some cases ffmpeg does require
+    # interaction with it. -> -y to overwrite
     # syscmd(cmd)
     os.system(cmd)
     os.unlink(LIST_FILE)
@@ -266,5 +272,5 @@ DOWN = "DOWN"
 # Main
 if __name__ == "__main__":
     root = tk.Tk()
-    app = App(root)
+    app = AudioConcatenator(root)
     root.mainloop()
