@@ -13,7 +13,7 @@ import tkinter.messagebox
 
 
 # TODO: use pathlib library instead of os.path
-
+# TODO: add (infinite) progress bar
 
 def syscmd(cmd):
     """ Runs a command on the system, waits for the command to finish, and then
