@@ -90,6 +90,7 @@ class AudioConcatenator:
         # Convert button
         self.convert_btn = ttk.Button(self.root, text="Convert", command=self.convert_btn_command, style='Accentbutton')
         self.convert_btn.place(x=270, y=160, width=92, height=30)
+        self.root.bind('<Return>', lambda e: self.convert_btn_command())
 
         # Exit button
         self.convert_btn = ttk.Button(self.root, text="Exit", command=sys.exit)
@@ -103,13 +104,14 @@ class AudioConcatenator:
         self.convert_btn["state"] = "normal"
 
     def convert_btn_command(self):
+        # if self.new_title_entry == '' or self.folder_select_entry == '':
         self.out_file_title = self.new_title_entry.get()
         self._create_top_level_selection_order()
         self.order_the_list()
 
     def _create_top_level_selection_order(self):
         self.top = tk.Toplevel(self.root)
-        width = 500
+        width = 600
         height = 600
         screenwidth = self.top.winfo_screenwidth()
         screenheight = self.top.winfo_screenheight()
@@ -119,20 +121,23 @@ class AudioConcatenator:
 
         # Listbox
         self.listbox = tk.Listbox(self.top)
-        self.listbox.place(x=10, y=10, width=400, height=580)
-        self.vertical_bar = ttk.Scrollbar(self.listbox, command=self.listbox.yview)
+        self.listbox.place(x=10, y=10, width=470, height=580)
+        self.vertical_bar = ttk.Scrollbar(self.listbox) # , command=self.listbox.yview)
         self.vertical_bar.pack(side=tk.RIGHT, fill=tk.Y)
         self.horizontal_bar = ttk.Scrollbar(self.listbox, orient='horizontal', command=self.listbox.xview)
         self.horizontal_bar.pack(side=tk.BOTTOM, fill=tk.X)
 
+        self.listbox.configure(yscrollcommand=self.vertical_bar.set, xscrollcommand=self.horizontal_bar.set)
+
         self.up_button = ttk.Button(self.top, text="UP", command=self.move_callback_up)
-        self.up_button.place(x=420, y=265, width=70, height=30)
+        self.up_button.place(x=490, y=265, width=92, height=30)
         self.delete_button = ttk.Button(self.top, text="DELETE", command=self.delete_callback)
-        self.delete_button.place(x=420, y=300, width=70, height=30)
+        self.delete_button.place(x=490, y=300, width=92, height=30)
         self.down_button = ttk.Button(self.top, text="DOWN", command=self.move_callback_down)
-        self.down_button.place(x=420, y=335, width=70, height=30)
-        self.continue_button = ttk.Button(self.top, text="Continue", command=self.continue_callback)
-        self.continue_button.place(x=420, y=30, width=70, height=30)
+        self.down_button.place(x=490, y=335, width=92, height=30)
+        self.continue_button = ttk.Button(self.top, text="Continue", command=self.continue_callback, style='Accentbutton')
+        self.top.bind('<Return>', lambda e: self.continue_callback)
+        self.continue_button.place(x=490, y=30, width=92, height=30)
 
         self.root.withdraw()
 
