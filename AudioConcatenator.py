@@ -8,8 +8,7 @@ from pathlib import Path
 # Tkinter imports
 import tkinter as tk
 import tkinter.ttk as ttk
-from tkinter import filedialog
-import tkinter.messagebox
+from tkinter import filedialog, messagebox
 
 
 # TODO: use pathlib library instead of os.path
@@ -104,10 +103,14 @@ class AudioConcatenator:
         self.convert_btn["state"] = "normal"
 
     def convert_btn_command(self):
-        # if self.new_title_entry == '' or self.folder_select_entry == '':
-        self.out_file_title = self.new_title_entry.get()
-        self._create_top_level_selection_order()
-        self.order_the_list()
+        if self.new_title_entry.get() == '':
+            messagebox.showerror(title="Input needed", message="Please enter the title.")
+        elif self.folder_select_entry.get() == '':
+            messagebox.showerror(title="Input needed", message="Please select the input folder.")
+        else:
+            self.out_file_title = self.new_title_entry.get()
+            self._create_top_level_selection_order()
+            self.order_the_list()
 
     def _create_top_level_selection_order(self):
         self.top = tk.Toplevel(self.root)
@@ -122,7 +125,7 @@ class AudioConcatenator:
         # Listbox
         self.listbox = tk.Listbox(self.top)
         self.listbox.place(x=10, y=10, width=470, height=580)
-        self.vertical_bar = ttk.Scrollbar(self.listbox) # , command=self.listbox.yview)
+        self.vertical_bar = ttk.Scrollbar(self.listbox)  # , command=self.listbox.yview)
         self.vertical_bar.pack(side=tk.RIGHT, fill=tk.Y)
         self.horizontal_bar = ttk.Scrollbar(self.listbox, orient='horizontal', command=self.listbox.xview)
         self.horizontal_bar.pack(side=tk.BOTTOM, fill=tk.X)
@@ -135,7 +138,8 @@ class AudioConcatenator:
         self.delete_button.place(x=490, y=300, width=92, height=30)
         self.down_button = ttk.Button(self.top, text="DOWN", command=self.move_callback_down)
         self.down_button.place(x=490, y=335, width=92, height=30)
-        self.continue_button = ttk.Button(self.top, text="Continue", command=self.continue_callback, style='Accentbutton')
+        self.continue_button = ttk.Button(self.top, text="Continue", command=self.continue_callback,
+                                          style='Accentbutton')
         self.top.bind('<Return>', lambda e: self.continue_callback)
         self.continue_button.place(x=490, y=30, width=92, height=30)
 
@@ -225,7 +229,7 @@ def _pre_conversion(folder, ordered_files, extension):
             # from the standard input.
             # ret_code, output = syscmd(cmd)
             # if ret_code != 0:
-            #    tkinter.messagebox.showerror("Error", output)
+            #    messagebox.showerror("Error", output)
             os.unlink(f_in)
             ordered_files[i] = ordered_files[i].replace('.m4a', '.mp3').replace('.m4b', '.mp3')
 
@@ -265,7 +269,7 @@ def convert(folder, ordered_files, out_file_title, extension):
     # Rename the folder with the original name
     os.rename(new_folder, folder)
 
-    tkinter.messagebox.showinfo(title="Finish", message="Process is completed.")
+    messagebox.showinfo(title="Finish", message="Process is completed.")
     exit(0)
 
 
