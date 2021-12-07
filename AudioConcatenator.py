@@ -1,5 +1,5 @@
 # general imports
-import fnmatch
+import shutil
 import os
 import sys
 from subprocess import Popen, PIPE, STDOUT
@@ -9,108 +9,132 @@ from pathlib import Path
 import tkinter as tk
 import tkinter.ttk as ttk
 from tkinter import filedialog, messagebox
+from tkinter import font
 
+# Constants
+LIST_FILE = 'list.txt'
+TEMP = "C:\\temp"
+UP = "UP"
+DOWN = "DOWN"
+
+
+""" Stript that concatenates and/or convert the audio(s) in mp3 format. """
 
 # TODO: use pathlib library instead of os.path
 # TODO: add (infinite) progress bar
 
-def syscmd(cmd):
-    """ Runs a command on the system, waits for the command to finish, and then
-    returns the text output of the command. If the command produces no text
-    output, the command's return code will be returned instead.
-    Parameter:
-        cmd: String. Command to be executed.
-    Returns:
-        return_code: int. Return value of the command.
-        output: string. standard output.
-    """
-    p = Popen(cmd, shell=True, stdin=PIPE, stdout=PIPE, stderr=STDOUT, close_fds=True)
-    p.wait()
-    output = p.stdout.read()
-    return p.returncode, output.decode()
-
-
 class AudioConcatenator:
     def __init__(self, r):
+        """ Constructor of the graphical user interface. """
         # setting title
         self.root = r
-        style = ttk.Style(root)
-        root.tk.call('source', 'styles/azure.tcl')
-        style.theme_use('azure')
-        self.root.title("AudioConcatenator")
+
+        self.width = 500
+        self.height = 260
+        self._set_screen_settings("Audio Concatenator", width=self.width, height=self.height)      
+        
         # setting window size
-        width = 400
-        height = 260
+        self._set_azure_style()
+
+        # set some variable:
+        self.out_file_title = None # Filename of the final output file
+        self.input_path = None  # Contains the list of files to be concatenated
+
+        # set the GUI
+        self._create_main_frame()
+
+    def _set_screen_settings(self, title, width=500, height=500):
+        """ Set the screen settings and the wingow placement. """
+        # set the title
+        self.root.title(title)
+
+        # set the icon
+        #self.icon_path = 'path'
+        #if not os.path.isfile(self.icon_path):
+        #    # if not locally called, use the absolute path
+        #    self.icon_path = os.path.join(os.path.dirname(sys.argv[0]), self.icon_path)
+        #self.root.tk.call('wm', 'iconphoto', root._w, tk.PhotoImage(file=self.icon_path))
+
+        # setting window size
         screenwidth = self.root.winfo_screenwidth()
         screenheight = self.root.winfo_screenheight()
         alignstr = '%dx%d+%d+%d' % (width, height, (screenwidth - width) / 2, (screenheight - height) / 2)
         self.root.geometry(alignstr)
         self.root.resizable(width=False, height=False)
 
-        # set some variable:
-        self.out_file_title = None
-        self.ordered_files = None
+    def _set_azure_style(self):
+        """ Set the Azure style. """
+        style = ttk.Style(self.root)
+        style_path = 'styles/azure.tcl'
+        if not os.path.isfile(style_path):
+            # if not locally called, use the absolute path
+            style_path = os.path.join(os.path.dirname(sys.argv[0]), style_path)
+        self.root.tk.call('source', style_path)
+        style.theme_use('azure')
 
-        # title
-        self.titlestyle = ttk.Style()
-        self.titlestyle.configure("titlestyle.TLabel", font=('Helvetica', 12))
-        self.title_label = ttk.Label(self.root, text="Audio Concatenator", style='titlestyle.TLabel', justify='center')
-        self.title_label.place(x=125, y=10, width=150, height=30)
+    def _create_main_frame(self):
+        # Title section
+        highlightFont = font.Font(family='Helvetica', name='appHighlightFont', size=12, weight='bold')
+        self.title_label = ttk.Label(self.root, text="Audio Concatenator", font=highlightFont)
+        self.title_label.place(x=125+50, y=10, width=200, height=30)
 
-        # Select Folder section
-        self.folder_path = ""
-        self.folder_select_label = ttk.Label(self.root, text="Folder Select")
-        self.folder_select_label.place(x=10, y=60, width=81, height=30)
+        # Select Files section
+        self.files_select_label = ttk.Label(self.root, text="Select Audio Files")
+        self.files_select_label.place(x=10, y=60, width=100, height=30)
 
-        self.folder_select_entry = ttk.Entry(self.root, text="")
-        self.folder_select_entry.place(x=100, y=60, width=206, height=30)
+        self.files_select_entry = ttk.Entry(self.root, text="")
+        self.files_select_entry.place(x=100+50, y=60, width=206, height=30)
 
-        self.select_folder_btn = ttk.Button(self.root, text="Select", command=self.select_folder_btn_command)
-        self.select_folder_btn.place(x=310, y=60, width=70, height=30)
+        self.select_files_btn = ttk.Button(self.root, text="Select", command=self.select_files_btn_command)
+        self.select_files_btn.place(x=310+50, y=60, width=70, height=30)
 
         # Select title section
         self.new_title_label = ttk.Label(self.root, text="New Title")
-        self.new_title_label.place(x=20, y=110, width=70, height=30)
+        self.new_title_label.place(x=20, y=110, width=100, height=30)
 
         self.new_title_entry = ttk.Entry(self.root, text="")
-        self.new_title_entry.place(x=100, y=110, width=205, height=30)
+        self.new_title_entry.place(x=100+50, y=110, width=205, height=30)
 
         # select extension section
         self.selected_extension = tk.StringVar(self.root, "mp3")
         self.available_extensions = sorted(["mp3", "mp4", "mp3a", "m4a", "m4b"])
 
         self.extension_label = ttk.Label(self.root, text="Extension")
-        self.extension_label.place(x=20, y=160, width=110, height=30)
+        self.extension_label.place(x=20+50, y=160, width=110, height=30)
 
-        self.extension_menu = ttk.Combobox(self.root, textvariable=self.selected_extension,
-                                           values=self.available_extensions)
-        self.extension_menu.place(x=100, y=160, width=110, height=30)
+        self.extension_menu = ttk.Combobox(self.root, textvariable=self.selected_extension, values=self.available_extensions)
+        self.extension_menu.place(x=100+50, y=160, width=110, height=30)
 
         # Convert button
         self.convert_btn = ttk.Button(self.root, text="Convert", command=self.convert_btn_command, style='Accentbutton')
-        self.convert_btn.place(x=270, y=160, width=92, height=30)
+        self.convert_btn.place(x=270+50, y=160, width=92, height=30)
         self.root.bind('<Return>', lambda e: self.convert_btn_command())
 
         # Exit button
         self.convert_btn = ttk.Button(self.root, text="Exit", command=sys.exit)
-        self.convert_btn.place(x=width / 2 - 92 / 2, y=210, width=92, height=30)
+        self.convert_btn.place(x=self.width / 2 - 92 / 2, y=210, width=92, height=30)
 
-    def select_folder_btn_command(self):
-        self.folder_path = filedialog.askdirectory()
-        self.folder_select_entry.insert(0, self.folder_path)
-        print("folder_path={}".format(self.folder_path))
-        self.new_title_entry.insert(0, os.path.split(self.folder_path)[-1])
-        self.convert_btn["state"] = "normal"
+    def select_files_btn_command(self):
+        """ Callback of the button to select the files. """
+        # initialdir = "/",
+        self.input_path = sorted(list(filedialog.askopenfilenames(title = "Select file(s)")))
+        self.files_select_entry.insert(0, str(self.input_path)) # populate the entry of the input files section.
+        self.new_title_entry.insert(0, os.path.split(self.input_path[0])[-1]) # try to autocomplete the entry containing the title of the output file.
+        self.convert_btn["state"] = "normal" # re-enable the button to perform the conversion.
 
     def convert_btn_command(self):
+        """ Callback of the button to perform the conversion. """
         if self.new_title_entry.get() == '':
             messagebox.showerror(title="Input needed", message="Please enter the title.")
-        elif self.folder_select_entry.get() == '':
-            messagebox.showerror(title="Input needed", message="Please select the input folder.")
+        elif self.files_select_entry.get() == '':
+            messagebox.showerror(title="Input needed", message="Please select the input files.")
         else:
-            self.out_file_title = self.new_title_entry.get()
+            # only one file:
+            if len(self.input_path) == 0:
+                convert(self.input_path, self.new_title_entry.get(), self.selected_extension.get())
+            else:
+                self.out_file_title = self.new_title_entry.get()
             self._create_top_level_selection_order()
-            self.order_the_list()
 
     def _create_top_level_selection_order(self):
         self.top = tk.Toplevel(self.root)
@@ -125,6 +149,8 @@ class AudioConcatenator:
         # Listbox
         self.listbox = tk.Listbox(self.top)
         self.listbox.place(x=10, y=10, width=470, height=580)
+        for i in range(len(self.input_path)): # populate the listbox
+            self.listbox.insert(i, self.input_path[i])
         self.vertical_bar = ttk.Scrollbar(self.listbox)  # , command=self.listbox.yview)
         self.vertical_bar.pack(side=tk.RIGHT, fill=tk.Y)
         self.horizontal_bar = ttk.Scrollbar(self.listbox, orient='horizontal', command=self.listbox.xview)
@@ -163,120 +189,147 @@ class AudioConcatenator:
     def delete_callback(self):
         self.listbox.delete(int(self.listbox.curselection()[0]))
 
-    def order_the_list(self):
-        in_list = sorted(fnmatch.filter(os.listdir(self.folder_path), "*." + self.selected_extension.get()))
-        for i in range(len(in_list)):
-            self.listbox.insert(i, in_list[i])
-
     def continue_callback(self):
-        self.ordered_files = list(self.listbox.get(0, tk.END))
-        convert(self.folder_path, self.ordered_files, self.new_title_entry.get(), self.selected_extension.get())
+        # update the list of files with the personalized order order.
+        self.input_path = list(self.listbox.get(0, tk.END))
+        convert(self.input_path, self.new_title_entry.get(), self.selected_extension.get())
 
-
-def _write_list_file(ordered_files, folder):
-    """ Write the ordered list of files + remove whitespaces in list file.
+def convert(files_list, out_title, target_extension):
+    """ Function that performs the actual conversion. As ffmpeg has some limitation, the following assumptions are taken:
+    1. the actual conversion will be performed under C:/temp folder. If not present, it will be created and then deleted.
+    2. 
     Parameters:
-        ordered_files: List of Strings.
-        folder: String: absolute path ot the folder.
+        files_list: List. Paths of the files to be converted.
+        out_title: String. Output file filename. The new file will be written in the same folder as the input files.
+        target_extension. String. Output file extension.
     """
-    with open(LIST_FILE, 'w') as fd:
-        lines = []
-        for f in ordered_files:
-            file_path = os.path.join(folder, f)
-            lines.append("file '" + file_path + "'\n")
-        fd.writelines(lines)
+    # if it does not exist, create the temp folder
+    temp_exists = True # true if there was already a folder called temp.
+    if not os.path.isdir(TEMP):
+        os.mkdir(TEMP)
+        temp_exists = False
+        print("created temp folder")
 
+    # copy each of the input file(s) in the temp folder
+    # remove the unsupported characters from the filenames of the files: whitespaces and single quote.
+    print("creating the temp files and renaming them")
+    files_list_temp = []
+    for i in range(len(files_list)):
+        filename = os.path.split(files_list[i])[1]
+        new_filename = filename.replace(" ", "_").replace("'", "")
+        shutil.copy(files_list[i], os.path.join(TEMP, new_filename))
+        files_list_temp.append(os.path.join(TEMP, new_filename))
 
-def _remove_unsupported_characters(folder, ordered_files):
-    """Remove the unwanted characters from the filenames of the files: whitespaces and single quote.
+    # perform a pre-conversion M4A or M4B to MP3
+    print("preconversion")
+    files_list_temp = _pre_conversion(files_list_temp)
 
-    Parameters:
-        folder: Path.
-        ordered_files: List of strings. Paths of the list of files
-    Returns:
-        ordered_files:
-    """
-    for i in range(len(ordered_files)):
-        if "'" in ordered_files[i] or " " in ordered_files[i]:
-            old_name = ordered_files[i]
-            ordered_files[i] = ordered_files[i].replace(" ", "_").replace("'", "")
-            os.rename(folder / old_name, folder / ordered_files[i])
-    return ordered_files
+    # distinguish between single file case and list of files.
+    if len(files_list) == 1:
+        # convert single file.
+        pass
+    else:
+        # write the ordered list of files + remove whitespaces in list file.
+        list_file_path = _write_list_file(files_list_temp, TEMP)
+        print("file list written")
 
+        # perform the conversion by list. The output file will be written in the temp folder.
+        print("starting conversion")
+        default_out_name = os.path.join(TEMP, "output_file.mp3")
+        cmd = "ffmpeg -y -f concat -safe 0 -i {} -c copy {}".format(list_file_path, default_out_name)
+        os.system(cmd)
+        print("conversion completed")
+        # TODO: find a way to use syscmd instead of os.system that is deprecated.
+        # the problem is that syscmd does not show the terminal, while in some cases ffmpeg does require
+        # interaction with it. -> -y to overwrite
+        # syscmd(cmd)
 
-def _pre_conversion(folder, ordered_files, extension):
-    """Helper function. It removes all unsupported charachters and then, if necessary, it performs a pre-conversion
-     of the audio files.
-     Paramters:
-        folder: String. Absolute path of the folder.
-        ordered_files: List of strings. List of the filenames in the correct order.
-        extension: String. Extension of the input files.
-     """
-    folder = Path(folder)
-    ordered_files = _remove_unsupported_characters(folder, ordered_files)
+        # delete the list file
+        os.unlink(list_file_path)
 
-    # convert the m4a to mp3
-    if extension == 'm4a' or extension == "m4b":
-        # covert each file in mp3, with the same name.
-        for i in range(len(ordered_files)):
-            f_in = folder / ordered_files[i]
-            # f_in = ordered_files[i]
-            f_out = folder / ordered_files[i].replace('.m4a', '.mp3').replace('.m4b', '.mp3')
-            # f_out = ordered_files[i].replace('.m4a', '.mp3').replace('.m4b', '.mp3')
-            cmd = 'ffmpeg.exe -i {} {}'.format(f_in, f_out)
-            os.system(cmd)
-            # syscmd does not work for some reason. THe reason seems to be if the ffmpeg command requires an input
-            # from the standard input.
-            # ret_code, output = syscmd(cmd)
-            # if ret_code != 0:
-            #    messagebox.showerror("Error", output)
-            os.unlink(f_in)
-            ordered_files[i] = ordered_files[i].replace('.m4a', '.mp3').replace('.m4b', '.mp3')
+        # rename (and move) the output file
+        print("moving the output file to the original directory")
+        original_dir = os.path.split(files_list[0])[0]
+        shutil.copy(default_out_name, os.path.join(original_dir, "{}.mp3".format(out_title)))
 
-        # os.chdir(dot)
-        # os.unlink(folder / "ffmpeg.exe")
-        extension = 'mp3'
-    return ordered_files, extension
+    # remove the content of the temp folder:
+    for f in files_list_temp:
+        os.unlink(f)
+    os.unlink(default_out_name)
+    print("removed temporary files")
 
-
-def convert(folder, ordered_files, out_file_title, extension):
-    # TODO: avoid renaming the files.
-
-    # Remove the whitespaces from the folder name and rename it
-    new_folder = folder.replace(" ", "_").replace("'", "")
-    os.rename(folder, new_folder)
-
-    # perform a pre-conversion
-    ordered_files, extension = _pre_conversion(new_folder, ordered_files, extension)
-
-    # write the ordered list of files + remove whitespaces in list file.
-    _write_list_file(ordered_files, new_folder)
-
-    default_out_name = "output_file.{}".format(extension)
-    cmd = "ffmpeg -y -f concat -safe 0 -i {} -c copy {}".format(LIST_FILE, os.path.join(new_folder, default_out_name))
-    # TODO: find a way to use syscmd instead of os.system that is deprecated.
-    # the problem is that syscmd does not show the terminal, while in some cases ffmpeg does require
-    # interaction with it. -> -y to overwrite
-    # syscmd(cmd)
-    os.system(cmd)
-    os.unlink(LIST_FILE)
-
-    # rename the output file
-    os.rename(os.path.join(new_folder, default_out_name),
-              "{}.{}".format(os.path.join(new_folder, out_file_title), extension))
-    # out_file_title = out_file_title.replace(" ", "_").replace("'", "")
-
-    # Rename the folder with the original name
-    os.rename(new_folder, folder)
+    # remove the folder
+    if os.path.isdir(TEMP) and not temp_exists:
+        os.unlink(TEMP)
+        temp_exists = True
+        print("deleted temp folder")
 
     messagebox.showinfo(title="Finish", message="Process is completed.")
     exit(0)
 
 
-# Constants
-LIST_FILE = 'list.txt'
-UP = "UP"
-DOWN = "DOWN"
+def _write_list_file(ordered_files, folder):
+    """ Write the ordered list of files and remove whitespaces in list file.
+    Parameters:
+        ordered_files: List of Strings.
+        folder: String. Path where the list file should be written.
+    Return:
+        target_file_path: String. Path where the list file is written.
+    """
+    target_file_path = os.path.join(folder, LIST_FILE)
+    with open(target_file_path, 'w') as fd:
+        lines = []
+        for f in ordered_files:
+            lines.append("file '" + f + "'\n")
+        fd.writelines(lines)
+    return target_file_path
+
+
+def _pre_conversion(ordered_files):
+    """ Helper function. It removes all unsupported charachters and then, if necessary, it performs a pre-conversion
+     of the audio files from M4A OR M4B to MP3.
+
+     syscmd does not work for some reason. THe reason seems to be if the ffmpeg command requires an input
+    from the standard input.
+    ret_code, output = syscmd(cmd)
+    if ret_code != 0:
+      messagebox.showerror("Error", output)
+
+     Parameters:
+        ordered_files: List of strings. List of the paths of the files to be converted in the correct order.
+     """
+    # covert each file in mp3, with the same name.
+    for i in range(len(ordered_files)):
+        if ordered_files[i].endswith(".m4a") or ordered_files[i].endswith(".m4b"):
+            f_in = ordered_files[i]
+            f_out = ordered_files[i].replace('.m4a', '.mp3').replace('.m4b', '.mp3')
+
+            # apply the conversion with ffmpeg
+            cmd = 'ffmpeg.exe -y -i {} {}'.format(f_in, f_out)
+            os.system(cmd)
+
+            # remove the original file.
+            os.unlink(f_in)
+
+            # update the list.
+            ordered_files[i] = f_out
+    return ordered_files
+
+
+def syscmd(cmd):
+    """ Runs a command on the system, waits for the command to finish, and then
+    returns the text output of the command. If the command produces no text
+    output, the command's return code will be returned instead.
+    Parameter:
+        cmd: String. Command to be executed.
+    Returns:
+        return_code: int. Return value of the command.
+        output: string. standard output.
+    """
+    p = Popen(cmd, shell=True, stdin=PIPE, stdout=PIPE, stderr=STDOUT, close_fds=True)
+    p.wait()
+    output = p.stdout.read()
+    return p.returncode, output.decode()
 
 # Main
 if __name__ == "__main__":
