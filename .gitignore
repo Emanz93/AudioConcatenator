@@ -3,3 +3,6 @@ test.py
 build/
 __pychache__/
 .idea/
+.vscode/
+test/
+test_orig/
