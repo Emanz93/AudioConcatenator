@@ -18,9 +18,8 @@ UP = "UP"
 DOWN = "DOWN"
 
 
-""" Stript that concatenates and/or convert the audio(s) in mp3 format. """
+""" Stript that concatenates and/or convert the audio(s) in mp3 format."""
 
-# TODO: use pathlib library instead of os.path
 # TODO: add (infinite) progress bar
 
 class AudioConcatenator:
@@ -227,7 +226,7 @@ def convert(files_list, out_title, target_extension):
     # distinguish between single file case and list of files.
     if len(files_list) == 1:
         # convert single file.
-        pass
+        default_out_name = files_list[0]
     else:
         # write the ordered list of files + remove whitespaces in list file.
         list_file_path = _write_list_file(files_list_temp, TEMP)
@@ -247,15 +246,19 @@ def convert(files_list, out_title, target_extension):
         # delete the list file
         os.unlink(list_file_path)
 
-        # rename (and move) the output file
-        print("moving the output file to the original directory")
-        original_dir = os.path.split(files_list[0])[0]
-        shutil.copy(default_out_name, os.path.join(original_dir, "{}.mp3".format(out_title)))
+    # rename (and move) the output file
+    print("moving the output file to the original directory")
+    original_dir = os.path.split(files_list[0])[0]
+    if not out_title.endswith(".mp3"):
+        out_title = "{}.mp3".format(out_title)
+    shutil.copy(default_out_name, os.path.join(original_dir, out_title))
 
     # remove the content of the temp folder:
     for f in files_list_temp:
         os.unlink(f)
-    os.unlink(default_out_name)
+    # delete the default out filename
+        os.unlink(default_out_name)
+    
     print("removed temporary files")
 
     # remove the folder
