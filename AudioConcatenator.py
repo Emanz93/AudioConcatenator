@@ -18,7 +18,7 @@ UP = "UP"
 DOWN = "DOWN"
 
 
-""" Stript that concatenates and/or convert the audio(s) in mp3 format."""
+""" Stript that concatenates and/or convert the audio(s) in mp3 format. """
 
 # TODO: add (infinite) progress bar
 
@@ -28,7 +28,7 @@ class AudioConcatenator:
         # setting title
         self.root = r
 
-        self.width = 500
+        self.width = 600
         self.height = 260
         self._set_screen_settings("Audio Concatenator", width=self.width, height=self.height)      
         
@@ -75,38 +75,38 @@ class AudioConcatenator:
         # Title section
         highlightFont = font.Font(family='Helvetica', name='appHighlightFont', size=12, weight='bold')
         self.title_label = ttk.Label(self.root, text="Audio Concatenator", font=highlightFont)
-        self.title_label.place(x=125+50, y=10, width=200, height=30)
+        self.title_label.place(x=220, y=10, width=200, height=30)
 
         # Select Files section
         self.files_select_label = ttk.Label(self.root, text="Select Audio Files")
         self.files_select_label.place(x=10, y=60, width=100, height=30)
 
         self.files_select_entry = ttk.Entry(self.root, text="")
-        self.files_select_entry.place(x=100+50, y=60, width=206, height=30)
+        self.files_select_entry.place(x=120, y=60, width=390, height=30)
 
         self.select_files_btn = ttk.Button(self.root, text="Select", command=self.select_files_btn_command)
-        self.select_files_btn.place(x=310+50, y=60, width=70, height=30)
+        self.select_files_btn.place(x=520, y=60, width=70, height=30)
 
         # Select title section
         self.new_title_label = ttk.Label(self.root, text="New Title")
-        self.new_title_label.place(x=20, y=110, width=100, height=30)
+        self.new_title_label.place(x=10, y=110, width=100, height=30)
 
         self.new_title_entry = ttk.Entry(self.root, text="")
-        self.new_title_entry.place(x=100+50, y=110, width=205, height=30)
+        self.new_title_entry.place(x=120, y=110, width=390, height=30)
 
         # select extension section
         self.selected_extension = tk.StringVar(self.root, "mp3")
         self.available_extensions = sorted(["mp3", "mp4", "mp3a", "m4a", "m4b"])
 
         self.extension_label = ttk.Label(self.root, text="Extension")
-        self.extension_label.place(x=20+50, y=160, width=110, height=30)
+        self.extension_label.place(x=80, y=160, width=110, height=30)
 
         self.extension_menu = ttk.Combobox(self.root, textvariable=self.selected_extension, values=self.available_extensions)
-        self.extension_menu.place(x=100+50, y=160, width=110, height=30)
+        self.extension_menu.place(x=160, y=160, width=110, height=30)
 
         # Convert button
         self.convert_btn = ttk.Button(self.root, text="Convert", command=self.convert_btn_command, style='Accentbutton')
-        self.convert_btn.place(x=270+50, y=160, width=92, height=30)
+        self.convert_btn.place(x=330, y=160, width=92, height=30)
         self.root.bind('<Return>', lambda e: self.convert_btn_command())
 
         # Exit button
@@ -122,7 +122,10 @@ class AudioConcatenator:
         self.convert_btn["state"] = "normal" # re-enable the button to perform the conversion.
 
     def convert_btn_command(self):
-        """ Callback of the button to perform the conversion. """
+        """ Callback of the button to perform the conversion. 
+            If it is a single file to be converted, then it goes directly to the conversion function.
+            Otherwise, it will open the top_level window to select the concatenation order.
+        """
         if self.new_title_entry.get() == '':
             messagebox.showerror(title="Input needed", message="Please enter the title.")
         elif self.files_select_entry.get() == '':
@@ -136,27 +139,31 @@ class AudioConcatenator:
             self._create_top_level_selection_order()
 
     def _create_top_level_selection_order(self):
+        """ Create the top_level windows. It allows to chose the order of the files to be concatenated. """
         self.top = tk.Toplevel(self.root)
-        width = 600
-        height = 600
+        self.top_lvl_width = 600
+        self.top_lvl_height = 600
         screenwidth = self.top.winfo_screenwidth()
         screenheight = self.top.winfo_screenheight()
-        alignstr = '%dx%d+%d+%d' % (width, height, (screenwidth - width) / 2, (screenheight - height) / 2)
+        alignstr = '%dx%d+%d+%d' % (self.top_lvl_width, self.top_lvl_height, (screenwidth - self.top_lvl_width) / 2, (screenheight - self.top_lvl_height) / 2)
         self.top.geometry(alignstr)
         self.top.resizable(width=False, height=False)
 
         # Listbox
         self.listbox = tk.Listbox(self.top)
         self.listbox.place(x=10, y=10, width=470, height=580)
-        for i in range(len(self.input_path)): # populate the listbox
-            self.listbox.insert(i, self.input_path[i])
         self.vertical_bar = ttk.Scrollbar(self.listbox)  # , command=self.listbox.yview)
         self.vertical_bar.pack(side=tk.RIGHT, fill=tk.Y)
         self.horizontal_bar = ttk.Scrollbar(self.listbox, orient='horizontal', command=self.listbox.xview)
         self.horizontal_bar.pack(side=tk.BOTTOM, fill=tk.X)
-
         self.listbox.configure(yscrollcommand=self.vertical_bar.set, xscrollcommand=self.horizontal_bar.set)
 
+        # populate the listbox
+        self.base_path = os.path.split(self.input_path[0])[0]
+        for i in range(len(self.input_path)):
+            self.listbox.insert(i, os.path.split(self.input_path[i])[1])
+
+        # create the buttons
         self.up_button = ttk.Button(self.top, text="UP", command=self.move_callback_up)
         self.up_button.place(x=490, y=265, width=92, height=30)
         self.delete_button = ttk.Button(self.top, text="DELETE", command=self.delete_callback)
@@ -165,9 +172,14 @@ class AudioConcatenator:
         self.down_button.place(x=490, y=335, width=92, height=30)
         self.continue_button = ttk.Button(self.top, text="Continue", command=self.continue_callback,
                                           style='Accentbutton')
+
+        # keyboard bindings
         self.top.bind('<Return>', lambda e: self.continue_callback)
+        #self.top.bind('<Key-w>', lambda e: self.move_callback_up)
+        #self.top.bind('<Key-S>', lambda e: self.move_callback_down)
         self.continue_button.place(x=490, y=30, width=92, height=30)
 
+        # withdraw the main window 
         self.root.withdraw()
 
     def move_callback_up(self):
@@ -182,8 +194,10 @@ class AudioConcatenator:
         self.listbox.delete(from_index)
         if direction == UP:
             self.listbox.insert(from_index - 1, value)
+            self.listbox.select_set(from_index - 1)
         else:
             self.listbox.insert(from_index + 1, value)
+            self.listbox.select_set(from_index + 1)
 
     def delete_callback(self):
         self.listbox.delete(int(self.listbox.curselection()[0]))
@@ -191,6 +205,9 @@ class AudioConcatenator:
     def continue_callback(self):
         # update the list of files with the personalized order order.
         self.input_path = list(self.listbox.get(0, tk.END))
+        for i in range(len(self.input_path)):
+            self.input_path[i] = os.path.join(self.base_path, self.input_path[i])
+
         convert(self.input_path, self.new_title_entry.get(), self.selected_extension.get())
 
 def convert(files_list, out_title, target_extension):
