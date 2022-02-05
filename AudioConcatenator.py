@@ -273,8 +273,9 @@ def convert(files_list, out_title, target_extension):
     # remove the content of the temp folder:
     for f in files_list_temp:
         os.unlink(f)
+    
     # delete the default out filename
-        os.unlink(default_out_name)
+    os.unlink(default_out_name)
     
     print("removed temporary files")
 
