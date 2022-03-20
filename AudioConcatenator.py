@@ -3,7 +3,7 @@ import shutil
 import os
 import sys
 from subprocess import Popen, PIPE, STDOUT
-from pathlib import Path
+import threading
 
 # Tkinter imports
 import tkinter as tk
@@ -11,9 +11,15 @@ import tkinter.ttk as ttk
 from tkinter import filedialog, messagebox
 from tkinter import font
 
+# TODO: add icon
+# TODO: add infinite progressbar
+# TODO: popup for some reason does not get highlighted and stays behind the other screens
+# TODO: use logger instead of the print
+# TODO: add a final message in the terminal of completion
+
 # Constants
 LIST_FILE = 'list.txt'
-TEMP = "C:\\temp"
+TEMP = "D:\\temp"
 UP = "UP"
 DOWN = "DOWN"
 
@@ -202,22 +208,35 @@ class AudioConcatenator:
     def delete_callback(self):
         self.listbox.delete(int(self.listbox.curselection()[0]))
 
+    '''def create_progressbar(self):
+        self.progr_bar_frame = ttk.Frame()
+        self.progr_bar_frame.pack(expand=True, fill=tk.BOTH, side=tk.TOP)
+        pb_hD = ttk.Progressbar(self.progr_bar_frame, orient='horizontal', mode='indeterminate')
+        pb_hD.pack(expand=True, fill=tk.BOTH, side=tk.TOP)
+        pb_hD.start(50)'''
+
     def continue_callback(self):
         # update the list of files with the personalized order order.
         self.input_path = list(self.listbox.get(0, tk.END))
         for i in range(len(self.input_path)):
             self.input_path[i] = os.path.join(self.base_path, self.input_path[i])
 
+        #t1=threading.Thread(target=convert, args=(self.input_path, self.new_title_entry.get(), self.selected_extension.get(),))
+        #t1.start()
+        #self.create_progressbar()  # This will block while the mainloop runs
+        #t1.join()
         convert(self.input_path, self.new_title_entry.get(), self.selected_extension.get())
+
+    
 
 def convert(files_list, out_title, target_extension):
     """ Function that performs the actual conversion. As ffmpeg has some limitation, the following assumptions are taken:
-    1. the actual conversion will be performed under C:/temp folder. If not present, it will be created and then deleted.
-    2. 
-    Parameters:
-        files_list: List. Paths of the files to be converted.
-        out_title: String. Output file filename. The new file will be written in the same folder as the input files.
-        target_extension. String. Output file extension.
+        1. the actual conversion will be performed under C:/temp folder. If not present, it will be created and then deleted.
+        2. 
+        Parameters:
+            files_list: List. Paths of the files to be converted.
+            out_title: String. Output file filename. The new file will be written in the same folder as the input files.
+            target_extension. String. Output file extension.
     """
     # if it does not exist, create the temp folder
     temp_exists = True # true if there was already a folder called temp.
@@ -285,17 +304,18 @@ def convert(files_list, out_title, target_extension):
         temp_exists = True
         print("deleted temp folder")
 
+    #self.progr_bar_frame.destroy()
     messagebox.showinfo(title="Finish", message="Process is completed.")
     exit(0)
 
 
 def _write_list_file(ordered_files, folder):
     """ Write the ordered list of files and remove whitespaces in list file.
-    Parameters:
-        ordered_files: List of Strings.
-        folder: String. Path where the list file should be written.
-    Return:
-        target_file_path: String. Path where the list file is written.
+        Parameters:
+            ordered_files: List of Strings.
+            folder: String. Path where the list file should be written.
+        Return:
+            target_file_path: String. Path where the list file is written.
     """
     target_file_path = os.path.join(folder, LIST_FILE)
     with open(target_file_path, 'w') as fd:
@@ -308,16 +328,16 @@ def _write_list_file(ordered_files, folder):
 
 def _pre_conversion(ordered_files):
     """ Helper function. It removes all unsupported charachters and then, if necessary, it performs a pre-conversion
-     of the audio files from M4A OR M4B to MP3.
+        of the audio files from M4A OR M4B to MP3.
 
-     syscmd does not work for some reason. THe reason seems to be if the ffmpeg command requires an input
-    from the standard input.
-    ret_code, output = syscmd(cmd)
-    if ret_code != 0:
-      messagebox.showerror("Error", output)
+        syscmd does not work for some reason. THe reason seems to be if the ffmpeg command requires an input
+        from the standard input.
+        ret_code, output = syscmd(cmd)
+        if ret_code != 0:
+        messagebox.showerror("Error", output)
 
-     Parameters:
-        ordered_files: List of strings. List of the paths of the files to be converted in the correct order.
+        Parameters:
+            ordered_files: List of strings. List of the paths of the files to be converted in the correct order.
      """
     # covert each file in mp3, with the same name.
     for i in range(len(ordered_files)):
@@ -339,13 +359,13 @@ def _pre_conversion(ordered_files):
 
 def syscmd(cmd):
     """ Runs a command on the system, waits for the command to finish, and then
-    returns the text output of the command. If the command produces no text
-    output, the command's return code will be returned instead.
-    Parameter:
-        cmd: String. Command to be executed.
-    Returns:
-        return_code: int. Return value of the command.
-        output: string. standard output.
+        returns the text output of the command. If the command produces no text
+        output, the command's return code will be returned instead.
+        Parameter:
+            cmd: String. Command to be executed.
+        Returns:
+            return_code: int. Return value of the command.
+            output: string. standard output.
     """
     p = Popen(cmd, shell=True, stdin=PIPE, stdout=PIPE, stderr=STDOUT, close_fds=True)
     p.wait()
