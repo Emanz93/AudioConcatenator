@@ -227,7 +227,6 @@ class AudioConcatenator:
         #t1.join()
         convert(self.input_path, self.new_title_entry.get(), self.selected_extension.get())
 
-    
 
 def convert(files_list, out_title, target_extension):
     """ Function that performs the actual conversion. As ffmpeg has some limitation, the following assumptions are taken:
@@ -283,11 +282,13 @@ def convert(files_list, out_title, target_extension):
         os.unlink(list_file_path)
 
     # rename (and move) the output file
-    print("moving the output file to the original directory")
     original_dir = os.path.split(files_list[0])[0]
+    print("moving the output file to the original directory: {}".format(original_dir))
     if not out_title.endswith(".mp3"):
         out_title = "{}.mp3".format(out_title)
-    shutil.copy(default_out_name, os.path.join(original_dir, out_title))
+    final_file_location = os.path.join(original_dir, out_title)
+    shutil.copy(default_out_name, final_file_location)
+    print("Final file: {}".format(final_file_location))
 
     # remove the content of the temp folder:
     for f in files_list_temp:
